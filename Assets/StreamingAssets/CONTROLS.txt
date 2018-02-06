@@ -1,0 +1,6 @@
+WASD - Move
+Mouse - Aim and shoot
+1, 2, 3 - Select player character
+E - TimeBubble
+Q - Drink blood
+F - Toggle Overwatch mode (will fire at any enemy that walks in front)
