@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Gate : MonoBehaviour {
-
+public class Gate : MonoBehaviour, IPathLogic {
+    
     [SerializeField]
     private float energyCap = 30f;
     private float energy;
@@ -13,6 +13,7 @@ public class Gate : MonoBehaviour {
     // Use this for initialization
     void Start() {
         energy = energyCap;
+        OnSpawn();
     }
 
     void FixedUpdate() {
@@ -43,4 +44,16 @@ public class Gate : MonoBehaviour {
         }
     }
 
+    public float Priority() {
+        // Should actually return the priority of the thing...
+        return 0f;
+    }
+
+    public string MapKey() {
+        return "Gate";
+    }
+
+    public void OnSpawn() {
+        WorldGrid.Instance.AddToMap(this.gameObject);
+    }
 }

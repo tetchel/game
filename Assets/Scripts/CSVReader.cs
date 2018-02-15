@@ -36,5 +36,4 @@ public class CSVReader {
             .Select(lvl => Path.GetFileName(lvl))
             .ToArray();
     }
-
 }

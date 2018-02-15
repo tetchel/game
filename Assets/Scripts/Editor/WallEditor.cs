@@ -20,7 +20,7 @@ public class WallEditor : EditorWindow {
 
     [MenuItem("GameObject/Daddy's Amazing Wall Generator")]
     static void OpenWindow() {
-        GetWindow(typeof(WallEditor), false, title: "Edit Strings");
+        GetWindow(typeof(WallEditor), false, title: "Generate Walls with Daddy");
     }
 
     private void OnEnable() {
@@ -62,6 +62,7 @@ public class WallEditor : EditorWindow {
         if(GUILayout.Button("GENERATE", GUILayout.Width(btnWidth), GUILayout.Height(btnHeight))) {
             // Do generation
             Scene scene = getScene(scenes[selectedSceneIndex]);
+            CSVReader csvReader = new CSVReader();
             bool[,] walls = csvReader.ParseCSV(levelCsvs[selectedLevelIndex]);
             addWallsToScene(scene, walls);
         }
@@ -113,7 +114,7 @@ public class WallEditor : EditorWindow {
                 if(locations[j, i]) {
                     //Debug.Log("A wall at " + j + ", " + i);
                     wallCount++;
-                    Instantiate(wallFab, new Vector3(j - width/2 + 0.5f, -1 * (i - height/2 + 0.5f), 0), Quaternion.identity, wallParent.transform);
+                    Instantiate(wallFab, Pathfinding.GridToWorld(new Vector2(i,j), height, width), Quaternion.identity, wallParent.transform);
                 }
             }
         }

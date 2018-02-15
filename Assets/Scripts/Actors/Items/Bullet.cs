@@ -83,7 +83,8 @@ public class Bullet : MonoBehaviour, IFreezable {
         //SpriteRenderer renderer = other.GetComponent<SpriteRenderer>();
         // Debug.Log("Shot " + other.name);
 
-        if (other == null || other.tag == "ignores-bullets") {
+        // Dont hurt nothing, things that ignore bullets, or yourself
+        if (other == null || other.tag == "ignores-bullets" || other.GetComponent<Actor>() == creator) {
             return;
         }
         else if(isFrozen) {
@@ -128,9 +129,9 @@ public class Bullet : MonoBehaviour, IFreezable {
 
             if (followObj != null) {
                 Vector3 offset = transform.position - other.transform.position;
-                followObj.setOffset(offset);
-                followObj.setTarget(other.transform);
-                followObj.enable();
+                followObj.SetOffset(offset);
+                followObj.SetTarget(other.transform);
+                followObj.Enable();
             }
         }
         else {

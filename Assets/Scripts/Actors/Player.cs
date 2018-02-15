@@ -8,7 +8,8 @@ using UnityEngine.UI;
 // The player only has one state at a time. The initial state is Alive.
 public enum PlayerState { ALIVE, HARVEST, BUBBLE, OVERWATCH, DEAD };
 
-public class Player : Actor, IShootable {
+public class Player : Actor, IShootable, IPathLogic {
+
     [SerializeField]
     private KeyCode shootKey = KeyCode.Mouse0;
     [SerializeField]
@@ -302,5 +303,14 @@ public class Player : Actor, IShootable {
 
     protected override float GetFireRate() {
         return 1f;
+    }
+
+    public override float Priority() {
+        // Should actually return the priority of the thing...
+        return 0f;
+    }
+
+    public override string MapKey() {
+        return "Player";
     }
 }

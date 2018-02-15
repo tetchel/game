@@ -5,7 +5,7 @@ using UnityEngine;
 // NOTE: Enemies "forward" direction is position.right
 
 [RequireComponent(typeof(Animator))]
-public class Enemy : Actor, IFreezable {
+public class Enemy : Actor, IFreezable, IPathLogic {
 
     public struct PlayerLocation {
         public Vector2 location;
@@ -21,7 +21,7 @@ public class Enemy : Actor, IFreezable {
     private State state;
 
     private const float SPEED_MULTIPLIER = 0.01f;
-
+    
     [SerializeField]
     private float chaseSpeed = 20f;
     private float defaultSpeed;
@@ -55,12 +55,12 @@ public class Enemy : Actor, IFreezable {
     // When a player chase is over and the enemy wants to return
     // to where they left off
     private bool returningToPath = false;
-    private Vector2 lastPathLocation;
 
     [SerializeField]
     private float fireRate;
 	private bool isFrozen = false;
 
+    
     // Use this for initialization
     protected override void Start() {
         base.Start();
@@ -91,12 +91,11 @@ public class Enemy : Actor, IFreezable {
     protected override void FixedUpdate() {
         base.FixedUpdate();
 		animator.SetBool("walk", false);
-
         GameObject foundPlayer = LookForOpponent();
 
         /* COMBAT */
         if (foundPlayer != null) {
-            // Debug.Log("Shooting");
+            // Debug.Log("COMBAT");
 
             // Keep track of the direction the player is heading in
             if (seePlayer == true) {
@@ -127,18 +126,17 @@ public class Enemy : Actor, IFreezable {
             seePlayer = false;
         }
 
-        /* Performing a spin to find player */
+        /* SPIN -- I actually do think it needs to be a state */
         else if (spinning) {
-            // Debug.Log("Spin");
+            // Debug.Log("SPIN");
             if (!Spin(spinDirection)) {
                 ToReturnState();
-
             }
         }
 
         /* SEARCH */
         else if (playerLocations.Count > 0) {
-            // Debug.Log("Chasing to " + playerLocations.Peek().location);
+            // Debug.Log("SEARCHing to " + playerLocations.Peek().location);
             if (currentSpeed != 0) {
                 currentSpeed = chaseSpeed;
             }
@@ -152,19 +150,27 @@ public class Enemy : Actor, IFreezable {
             if (currentSpeed != 0) {
                 currentSpeed = defaultSpeed;
             }
-            if (!Move(lastPathLocation)) {
-                returningToPath = false;
+            // print("RETURNing to " + pathToReturnToPatrol.Peek());
+            if (!Move(pathToReturnToPatrol.Peek())) {
+                // Made it back to patrol path
+                pathToReturnToPatrol.Pop();
+                NextPathPoint();
+
+                if (pathToReturnToPatrol.Count <= 0) {
+                    returningToPath = false;
+                }
             }
         }
 
         /* PATROL */
         else {
+            // Debug.Log("PATROLing to " + path[nextPoint]);
             if (path.Count > 1 && !Move(path[nextPoint])) {
                 NextPathPoint();
             }
         }
     }
-
+    
     /* Returns false when enemy has reached destination */
     private bool Move(Vector2 destination) {
 		animator.SetBool("walk", true);
@@ -173,19 +179,13 @@ public class Enemy : Actor, IFreezable {
         // Vector2 rotToDest = destination - currentPosition2D;
         //transform.up = Vector2.Lerp(position2, rot, Time.deltaTime * turnSpeed);
         // Debug.Log("Moving");
+
         if(Turn(destination)) {
-            // Debug.Log("NOt moving cause turned");
             // Don't move
+            // Debug.Log("Not moving cause turned");
             return true;
         }
 
-        /*
-        Vector3 vectorToTarget = new Vector3(destination.x, destination.y) - transform.position;
-        float angle = Mathf.Atan2(vectorToTarget.y, vectorToTarget.x) * Mathf.Rad2Deg;
-        Quaternion q = Quaternion.AngleAxis(angle, Vector3.right);
-        transform.rotation = Quaternion.Slerp(transform.rotation, q, Time.deltaTime * turnSpeed);
-
-        */
         // Move towards destination
         transform.position = Vector2.MoveTowards(transform.position, destination, currentSpeed);
 
@@ -193,6 +193,7 @@ public class Enemy : Actor, IFreezable {
             // Debug.Log("Reached move location of " + destination);
             return false;
         }
+
         // Debug.Log("Still moving to " + destination);
         return true;
     }
@@ -210,45 +211,9 @@ public class Enemy : Actor, IFreezable {
 
         transform.Rotate(new Vector3(0,0,turnSpeed*Mathf.Sign(remainingRotation)));
         return true;
-
-        /*
-        Vector2 destMinusPos = (destination - (Vector2)transform.position).normalized;
-        Vector2 right = transform.right.normalized;
-        //// Debug.Log("destMinusPos " + destMinusPos);
-        // Debug.Log("right " + right);
-        float threshold = 0.001f;
-        if(Mathf.Abs(destMinusPos.x - right.x) < threshold && Mathf.Abs(destMinusPos.y - right.y) < threshold) {
-            // Debug.Log("Don't need to turn");
-            return false;
-        }
-        // Debug.Log("Turning");
-        // float turnProgress = turnSpeed * turningUpdates++;
-        Vector3 targetDirection = destination - (Vector2)transform.position;
-        float targetAngle = Mathf.Atan2(targetDirection.y, targetDirection.x) * Mathf.Rad2Deg;
-        Quaternion destRotation = Quaternion.LookRotation(targetDirection);
-        //Quaternion targetRotation = Quaternion.AngleAxis(targetAngle, Vector3.forward);
-        // transform.rotation = Quaternion.Slerp(/startRotation, targetRotation, turnSpeed * turningUpdates);
-
-        if (Quaternion.Equals(transform.rotation, destRotation)) {
-            // Debug.Log("Don't need to turn 2");
-            return false;
-        }
-
-        transform.rotation = destRotation;
-        return true;
-/*
-        if (turnProgress >= 1) {
-            return false;
-        }
-
-        return true;
-   */
     }
 
     private void ChasePlayer(PlayerLocation playerLoc) {
-		if (playerLocations.Count <= 0) {
-			lastPathLocation = transform.position;
-		}
         playerLocations.Push(playerLoc);
     }
 
@@ -256,12 +221,15 @@ public class Enemy : Actor, IFreezable {
         spinning = true;
         spinUpdates = 0;
         spinDirection = playerLocations.Peek().direction;
-        playerLocations.Pop();
+
+        // TODO: player locations should only be one location
+        playerLocations = new Stack<PlayerLocation>();
     }
 
     private void ToReturnState() {
         spinning = false;
         returningToPath = true;
+        pathToReturnToPatrol = new Stack<Vector2>(WorldGrid.Instance.AStar(transform.position, path[nextPoint]));
     }
 
     private int NextPathPoint() {
@@ -326,5 +294,14 @@ public class Enemy : Actor, IFreezable {
         // Debug.Log("Heared a noise at " + loc.location);
         //transform.LookAt(loc.location);
         ChasePlayer(loc);
+    }
+
+    public override float Priority() {
+        // Should actually return the priority of the thing...
+        return 0f;
+    }
+
+    public override string MapKey() {
+        return "Enemy";
     }
 }

@@ -3,8 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 
 [RequireComponent(typeof(Animator))]
-public abstract class Actor : MonoBehaviour, IShootable, IHarvester {
-
+public abstract class Actor : MonoBehaviour, IShootable, IHarvester, IPathLogic {
+    
     protected int health;
     [SerializeField]
     protected float speed;
@@ -34,7 +34,7 @@ public abstract class Actor : MonoBehaviour, IShootable, IHarvester {
     protected virtual void Start() {
         animator = GetComponent<Animator>();
         rendererr = GetComponent<Renderer>();
-
+        OnSpawn();
     }
 
     // Update is called once per frame
@@ -125,7 +125,7 @@ public abstract class Actor : MonoBehaviour, IShootable, IHarvester {
     protected virtual void Die() {
         GameObject newCorpse = Instantiate(corpsePrefab, transform.position, transform.rotation);
 
-        // Destroy(gameObject);
+        Destroy(gameObject);
         rendererr.enabled = false;
     }
 
@@ -167,4 +167,16 @@ public abstract class Actor : MonoBehaviour, IShootable, IHarvester {
 
     #endregion Harvesting
 
+    public virtual float Priority() {
+        // Should actually return the priority of the thing...
+        return 0f;
+    }
+
+    public virtual string MapKey() {
+        return "Actor";
+    }
+
+    public void OnSpawn() {
+        WorldGrid.Instance.AddToMap(this.gameObject);
+    }
 }

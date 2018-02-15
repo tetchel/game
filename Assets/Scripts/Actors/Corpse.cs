@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Corpse : MonoBehaviour {
-
+public class Corpse : MonoBehaviour, IPathLogic {
+    
     [SerializeField]
     private float bloodCapacity = 10f;
 	private float maxBloodCapacity;
@@ -16,7 +16,8 @@ public class Corpse : MonoBehaviour {
 
 	void Start(){
 		maxBloodCapacity = bloodCapacity;
-	}
+        OnSpawn();
+    }
 
     private void OnTriggerEnter2D(Collider2D collision) {
         IHarvester newHarvester = collision.gameObject.GetComponent<IHarvester>();
@@ -60,5 +61,18 @@ public class Corpse : MonoBehaviour {
         if (harvester == currentHarvester) {
             currentHarvester = null;
         }
+    }
+
+    public float Priority() {
+        // Should actually return the priority of the thing...
+        return 0f;
+    }
+
+    public string MapKey() {
+        return "Corpse";
+    }
+
+    public void OnSpawn() {
+        WorldGrid.Instance.AddToMap(this.gameObject);
     }
 }
